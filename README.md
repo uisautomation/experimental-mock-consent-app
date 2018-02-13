@@ -2,6 +2,9 @@
 
 This is a mock consent app for our Hydra install.
 
+* [Docker hub
+    page](https://hub.docker.com/r/uisautomation/experimental-mock-consent-app)
+
 ## Configuration
 
 The following environment variables must be set for the container to run.
