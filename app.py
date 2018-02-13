@@ -1,7 +1,7 @@
 import logging
 import os
 
-from flask import Flask, request, render_template, redirect
+from flask import Flask, request, render_template, redirect, jsonify
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import BackendApplicationClient
 
@@ -22,6 +22,11 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     return 'This is the consent app'
+
+
+@app.route('/healthz')
+def healthz():
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/consent', methods=['GET'])
