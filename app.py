@@ -1,7 +1,10 @@
 import logging
 import os
 
-from flask import Flask, request, render_template, redirect, jsonify
+from flask import (
+    Flask, request, render_template, redirect, jsonify,
+    session as flask_session
+)
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import BackendApplicationClient
 
@@ -17,6 +20,7 @@ TOKEN_ENDPOINT = os.environ.get('TOKEN_ENDPOINT')
 CONSENT_ENDPOINT = os.environ.get('CONSENT_ENDPOINT')
 
 app = Flask(__name__)
+app.secret_key = 'super-secret'
 
 
 @app.route('/')
@@ -49,6 +53,18 @@ def consent_get():
     r.raise_for_status()
     consent = r.json()
 
+    # Note: flask.session does not support .get()
+    try:
+        subject = flask_session['subject']
+    except KeyError:
+        subject = None
+
+    if 'prompt:none' in consent['requestedScopes'] and subject is None:
+        return _reject_request(session, consent, 'user not logged in')
+
+    if subject is not None:
+        return _accept_request(session, consent, subject)
+
     return render_template('consent.html', consent=consent)
 
 
@@ -67,10 +83,26 @@ def consent_post():
     scheme = request.form['scheme']
     identifier = request.form['identifier']
 
+    subject = ':'.join([scheme, identifier])
+    flask_session['subject'] = subject
+
+    return _accept_request(session, consent, subject)
+
+
+def _accept_request(session, consent, subject):
     session.patch(
-        CONSENT_ENDPOINT + consent_id + '/accept', json={
+        CONSENT_ENDPOINT + consent['id'] + '/accept', json={
             'grantScopes': consent['requestedScopes'],
-            'subject': ':'.join([scheme, identifier])
+            'subject': subject,
+        })
+
+    return redirect(consent['redirectUrl'])
+
+
+def _reject_request(session, consent, reason):
+    session.patch(
+        CONSENT_ENDPOINT + consent['id'] + '/reject', json={
+            'reason': reason,
         })
 
     return redirect(consent['redirectUrl'])
