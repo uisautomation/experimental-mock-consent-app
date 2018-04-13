@@ -33,6 +33,14 @@ def healthz():
     return jsonify({'status': 'ok'})
 
 
+@app.route('/logout')
+def logout():
+    if 'subject' in flask_session:
+        del flask_session['subject']
+        return jsonify({'message': 'logged out'})
+    return jsonify({'message': 'no user logged in'})
+
+
 @app.route('/consent', methods=['GET'])
 def consent_get():
     session = get_session()
