@@ -43,6 +43,21 @@ def logout():
 
 @app.route('/consent', methods=['GET'])
 def consent_get():
+    # Handle GET-requests to the consent endpoint. These are initiated when the
+    # User Agent (UA) navigates to the token request URL and Hydra redirects them
+    # here. We are passed an id for the consent request in the query string
+    # which we should validate, examine and accept or reject as we see fit.
+    #
+    # If no user interaction is needed to accept/reject the request, we
+    # immediately do so and redirect the UA back to Hydra by means of the
+    # redirect URI Hydra gives us. No interaction is needed if the user is
+    # logged in or the "prompt:none" scope is requested and there is no current
+    # logged in user.
+    #
+    # If user interaction *is* needed, we render a simple login form which will
+    # POST its content back to the '/consent' endpoint. This is handled by
+    # consent_post() below.
+
     session = get_session()
 
     error = request.args.get('error')
@@ -78,6 +93,14 @@ def consent_get():
 
 @app.route('/consent', methods=['POST'])
 def consent_post():
+    # Handle POST requests to the consent endpoint. These are initiated after
+    # user interaction with the form rendered by consent_get(). The form
+    # provides us with the current Hydra consent id and the scheme and
+    # identifier for the user which should be logged in.
+    #
+    # We take the scheme and identifier from the form and use them to construct
+    # a subject for the consent request which we immediately grant.
+
     session = get_session()
 
     consent_id = request.args.get('consent')
